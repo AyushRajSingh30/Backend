@@ -1,6 +1,6 @@
 //method 1 by promise  method 2 are most used in production
 const asynchandeler= (requestHandeler)=>{
-    (req, res, next)=>{
+   return (req, res, next)=>{
         Promise.resolve(requestHandeler(req,res,next)).catch((err)=>next(err))
     }
 }

@@ -54,10 +54,10 @@ const userSchema =new Schema({
 
 userSchema.pre("save",  async function(next){
 //If cheak password is modifi or not if it modify then than password save and encreypt
-    if(!this.isModified("password")) return next() 
+    if(!this.isModified("password")) return next() ;
+    //10 is limit
     this.password=bcrypt.hash(this.password, 10)
-//10 is limit
-    next()
+    next();
 })
 
 //this method cheak password is true or false
