@@ -1,11 +1,11 @@
 //method 1 by promise  method 2 are most used in production
-const asynchandeler= (requestHandeler)=>{
-   return (req, res, next)=>{
-        Promise.resolve(requestHandeler(req,res,next)).catch((err)=>next(err))
+const asynchandeler = (requestHandeler) => {
+    return (req, res, next) => {
+        Promise.resolve(requestHandeler(req, res, next)).catch((err) => next(err))
     }
 }
 
-export {asynchandeler};
+export { asynchandeler };
 
 
 
