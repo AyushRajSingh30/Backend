@@ -1,3 +1,4 @@
+//this is avilable in npm packge
 class ApiError extends Error {
     constructor(statusCode,
         message = "Somthing went wrong",
