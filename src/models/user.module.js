@@ -57,6 +57,7 @@ userSchema.pre("save", async function (next) {
     //If cheak password is modifi or not if it modify then than password save and encreypt
     if (!this.isModified("password")) return next();
     //10 is limit
+    //bcrypt.hash is used for incressing security of password like encrupt password
     this.password = await bcrypt.hash(this.password, 10)
     next();
 })
