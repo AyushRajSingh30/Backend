@@ -1,7 +1,7 @@
 import { asynchandeler } from "../utils/asyncHandeler.js";
 import { ApiError } from "../utils/ApiError.js"
 import { User } from "../models/user.module.js"
-import { uplodeOnCloudinary } from "../utils/cloudnary.js"
+import { uploadOnCloudinary } from "../utils/cloudnary.js"
 import { ApiResponce } from "../utils/ApiResponce.js"
 import { application } from "express";
 
@@ -47,7 +47,7 @@ const registerUser = asynchandeler(async (req, res) => {
 
   // If req.files is available and not null or undefined, it proceeds to access the avatar property of req.files. Then, it accesses the first element [0] of the avatar req.files given by multter
 
-  //4. avatarLocalPath store multer path of avatar
+  //4. avatarLocalPath store multer path of avatar and req.files provide by multter
   const avatarLocalPath = req.files?.avatar[0].path;
   const coverImageLocalPath = req.files?.coverImage[0]?.path;
 
@@ -56,24 +56,30 @@ const registerUser = asynchandeler(async (req, res) => {
   }
 
   //5. Uplode on cloudinary server
-  const avatar = await uplodeOnCloudinary(avatarLocalPath);
-  const coverImage = await uplodeOnCloudinary(coverImageLocalPath);
+  console.log(`avatarLocalPath:=>${avatarLocalPath}`);
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 
-  if (!avatar) {
-    throw new ApiError(400, "Avatar file is required")
-  }
+         console.log(`avatar:=>${avatar}`);
+
+  //avatar requred true remove due to cloudnary not accept my file i true aagain in future
+  
+  // if (!avatar) {
+  //   throw new ApiError(400, "400 Avatar file is required")
+  // }
 
 
   //6. creat user and entry in db
   const user = await User.create({
     fullName,
-    avatar: avatar.url,
+    avatar: avatar?.url || "",  // avatar are not required due to crash we used in future
     coverImage: coverImage?.url || "",
     email,
     password,
     username: username.toLowerCase(),
 
   })
+
 
 
   // 7. cheak user is avilable if avilable than apply select method and write which value you not want
