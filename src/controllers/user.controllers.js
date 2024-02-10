@@ -5,7 +5,22 @@ import { uploadOnCloudinary } from "../utils/cloudnary.js"
 import { ApiResponce } from "../utils/ApiResponce.js"
 import { application } from "express";
 
+const generateAccessAndRefreshTokens= async(userId)=>{
+try {
+  const user= await User.findById(userId);
+  const accessToken= user.generateAccessToken()
+  const refreshToken= user.generateRefreshToken();
 
+   //we add refreshToken in database
+  user.refreshToken=refreshToken
+  await user.save({validateBeforeSave:false});
+
+  return {accessToken, refreshToken}
+
+} catch (error) {
+  throw new ApiError(500,"Somthing Wrong while generated refress and access token")
+}
+}
 
 
 const registerUser = asynchandeler(async (req, res) => {
@@ -108,7 +123,87 @@ const registerUser = asynchandeler(async (req, res) => {
 
 })
 
+const loginUser= asynchandeler(async(req, res)=>{
+//1. req body -> data
+//2. username or email
+//3. find the user
+//4. password cheak  by bcrypt method
+//5. access and refresh token and sent to user
+//6. sent token through cookies
+ 
+ const {email, username, password}=req.body;
+ if(!username || !email){
+  throw new ApiError(400, "username or password is required");
+ }
+       //findOne mongosdb method and $or dono me se koi bhi phle mile uski value le lo
+     const user= await User.findOne({
+        $or:[{username},{email}]
+      })
 
+      if(!user){
+        throw new ApiError(400, "User does not exixts")
+      }
+      //User is used for apply mongodb method but user is used for you one make method 
+
+   const isPasswordValid=await user.isPasswordCorrect(password)
+
+   if(!isPasswordValid){
+    throw new ApiError(401,"Invalid user credentials")
+   }
+
+  const {accessToken,refreshToken}=await generateAccessAndRefreshTokens(user._id)
+  
+    const loggedInUser= await User.findById(user._id).select("-password -refreshToken")
+
+// cookies
+// httpOnly and Secure by using this no one modify cookies on frontend cookies only modify  by backend
+//because by default cookies also modify by frontend
+const options={
+  httpOnly: true,
+  secure:true
+}
+
+//Add cookies and responce
+return res
+.status(200)
+.cookie("acccessToken", accessToken, options)
+.cookie("refreshToken", refreshToken)
+.json(
+  new ApiResponce(200,
+    {
+      user:loggedInUser, accessToken, refreshToken
+    }, "User logged in Successfully")
+)
+})
+
+
+
+const logoutUser= asynchandeler(async(req, res)=>{
+       //remove cookies and refresh tokens
+  User.findByIdAndUpdate(
+    // req.user.id is quary for find user
+    req.user._id,{
+      // $set is mongosedb operater what you want to update
+      $set:{
+
+        refreshToken:undefined,
+      }
+    },
+    {
+      new: true                                    //all new value only come 
+    }
+  )
+  const options={
+    httpOnly: true,
+    secure:true
+  }
+  
+  return res
+  .status(200)
+  .clearCookies("accessToken", options)
+  .clearCookies("refreshToken", options)
+.json(new ApiResponce(200, {}, "User logged Out"))
+})
 
 
 
@@ -118,4 +213,4 @@ const registerUser = asynchandeler(async (req, res) => {
 //     })
 // })
 
-export { registerUser }
+export { registerUser, loginUser, logoutUser }
