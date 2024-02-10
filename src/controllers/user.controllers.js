@@ -5,21 +5,21 @@ import { uploadOnCloudinary } from "../utils/cloudnary.js"
 import { ApiResponce } from "../utils/ApiResponce.js"
 import { application } from "express";
 
-const generateAccessAndRefreshTokens= async(userId)=>{
-try {
-  const user= await User.findById(userId);
-  const accessToken= user.generateAccessToken()
-  const refreshToken= user.generateRefreshToken();
+const generateAccessAndRefreshTokens = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    const accessToken = user.generateAccessToken()
+    const refreshToken = user.generateRefreshToken();
 
-   //we add refreshToken in database
-  user.refreshToken=refreshToken
-  await user.save({validateBeforeSave:false});
+    //we add refreshToken in database
+    user.refreshToken = refreshToken
+    await user.save({ validateBeforeSave: false });
 
-  return {accessToken, refreshToken}
+    return { accessToken, refreshToken }
 
-} catch (error) {
-  throw new ApiError(500,"Somthing Wrong while generated refress and access token")
-}
+  } catch (error) {
+    throw new ApiError(500, "Somthing Wrong while generated refress and access token")
+  }
 }
 
 
@@ -63,13 +63,14 @@ const registerUser = asynchandeler(async (req, res) => {
   // If req.files is available and not null or undefined, it proceeds to access the avatar property of req.files. Then, it accesses the first element [0] of the avatar req.files given by multter
 
   //4. avatarLocalPath store multer path of avatar and req.files provide by multter
+  // we not give avatar in body error show: Cannot read properties of undefined
   const avatarLocalPath = req.files?.avatar[0].path;
   // const coverImageLocalPath = req.files?.coverImage[0]?.path;
 
   let coverImageLocalPath;
-  
-  if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length>0){
-    coverImageLocalPath=req.files.coverImage[0].path;
+
+  if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+    coverImageLocalPath = req.files.coverImage[0].path;
   }
 
   if (!avatarLocalPath) {
@@ -81,10 +82,10 @@ const registerUser = asynchandeler(async (req, res) => {
   const avatar = await uploadOnCloudinary(avatarLocalPath);
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 
-         console.log(`avatar:=>${avatar}`);
+  console.log(`avatar:=>${avatar}`);
 
   //avatar requred true remove due to cloudnary not accept my file i true aagain in future
-  
+
   // if (!avatar) {
   //   throw new ApiError(400, "400 Avatar file is required")
   // }
@@ -123,86 +124,87 @@ const registerUser = asynchandeler(async (req, res) => {
 
 })
 
-const loginUser= asynchandeler(async(req, res)=>{
-//1. req body -> data
-//2. username or email
-//3. find the user
-//4. password cheak  by bcrypt method
-//5. access and refresh token and sent to user
-//6. sent token through cookies
- 
- const {email, username, password}=req.body;
- if(!username || !email){
-  throw new ApiError(400, "username or password is required");
- }
-       //findOne mongosdb method and $or dono me se koi bhi phle mile uski value le lo
-     const user= await User.findOne({
-        $or:[{username},{email}]
-      })
+const loginUser = asynchandeler(async (req, res) => {
+  //1. req body -> data
+  //2. username or email
+  //3. find the user
+  //4. password cheak  by bcrypt method
+  //5. access and refresh token and sent to user
+  //6. sent token through cookies
 
-      if(!user){
-        throw new ApiError(400, "User does not exixts")
-      }
-      //User is used for apply mongodb method but user is used for you one make method 
+  const { email, username, password } = req.body;
+  console.log(email);
+  if (!username && !email) {
+    throw new ApiError(400, "username or password is required");
+  }
+  //findOne mongosdb method and $or dono me se koi bhi phle mile uski value le lo
+  const user = await User.findOne({
+    $or: [{ username }, { email }]
+  })
 
-   const isPasswordValid=await user.isPasswordCorrect(password)
+  if (!user) {
+    throw new ApiError(400, "User does not exixts")
+  }
+  //User is used for apply mongodb method but user is used for you one make method 
 
-   if(!isPasswordValid){
-    throw new ApiError(401,"Invalid user credentials")
-   }
+  const isPasswordValid = await user.isPasswordCorrect(password)
 
-  const {accessToken,refreshToken}=await generateAccessAndRefreshTokens(user._id)
-  
-    const loggedInUser= await User.findById(user._id).select("-password -refreshToken")
+  if (!isPasswordValid) {
+    throw new ApiError(401, "Invalid user credentials")
+  }
 
-// cookies
-// httpOnly and Secure by using this no one modify cookies on frontend cookies only modify  by backend
-//because by default cookies also modify by frontend
-const options={
-  httpOnly: true,
-  secure:true
-}
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
 
-//Add cookies and responce
-return res
-.status(200)
-.cookie("acccessToken", accessToken, options)
-.cookie("refreshToken", refreshToken)
-.json(
-  new ApiResponce(200,
-    {
-      user:loggedInUser, accessToken, refreshToken
-    }, "User logged in Successfully")
-)
+  const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+
+  // cookies
+  // httpOnly and Secure by using this no one modify cookies on frontend cookies only modify  by backend
+  //because by default cookies also modify by frontend
+  const options = {
+    httpOnly: true,
+    secure: true
+  }
+
+  //Add cookies and responce
+  return res
+    .status(200)
+    .cookie("acccessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken)
+    .json(
+      new ApiResponce(200,
+        {
+          user: loggedInUser, accessToken, refreshToken
+        }, "User logged in Successfully")
+    )
 })
 
 
 
-const logoutUser= asynchandeler(async(req, res)=>{
-       //remove cookies and refresh tokens
+const logoutUser = asynchandeler(async (req, res) => {
+  //remove cookies and refresh tokens
   User.findByIdAndUpdate(
     // req.user.id is quary for find user
-    req.user._id,{
-      // $set is mongosedb operater what you want to update
-      $set:{
+    req.user._id, {
+    // $set is mongosedb operater what you want to update
+    $set: {
 
-        refreshToken:undefined,
-      }
-    },
+      refreshToken: undefined,
+    }
+  },
     {
       new: true                                    //all new value only come 
     }
   )
-  const options={
+  const options = {
     httpOnly: true,
-    secure:true
+    secure: true
   }
-  
+
   return res
-  .status(200)
-  .clearCookies("accessToken", options)
-  .clearCookies("refreshToken", options)
-.json(new ApiResponce(200, {}, "User logged Out"))
+    .status(200)
+    .clearCookies("accessToken", options)
+    .clearCookies("refreshToken", options)
+    .json(new ApiResponce(200, {}, "User logged Out"))
 })
 
 
