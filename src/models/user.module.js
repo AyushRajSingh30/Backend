@@ -62,9 +62,10 @@ userSchema.pre("save", async function (next) {
     next();
 })
 
+//methods provide by mongoose for add method like add prototype in object
 //this method cheak password is true or false
 
-userSchema.method.isPasswordCorrect = async function (password) {
+userSchema.methods.isPasswordCorrect = async function(password) {
     /*pasword compare we give to input (1. user given password) && (2.bcrypt encrypt this.password)*/
     return await bcrypt.compare(password, this.password)
 }
@@ -74,7 +75,7 @@ userSchema.method.isPasswordCorrect = async function (password) {
 // The primary purpose of a refresh token is to renew or obtain a new access token without requiring the user to log in again.
 
 
-userSchema.method.generateAccessToken = async function () {
+userSchema.methods.generateAccessToken = async function () {
     return jwt.sign({
         _id: this._id,
         email: this.email,
@@ -85,7 +86,7 @@ userSchema.method.generateAccessToken = async function () {
         { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
     )
 }
-userSchema.method.generateRefreshToken = async function () {
+userSchema.methods.generateRefreshToken = async function () {
     return jwt.sign({
         _id: this._id
 
