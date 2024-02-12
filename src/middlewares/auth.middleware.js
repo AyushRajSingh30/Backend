@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { User } from "../models/user.module.js"
 export const verifyJWT = asynchandeler(async (req, res, next) => {
     try {
-        //rew.header is a method to access accessToken like Authorization: Bearer <token>
+        //req.header is a method to access accessToken like Authorization: Bearer <token>
         const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer", "")
 
         if (!token) {

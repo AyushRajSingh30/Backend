@@ -11,7 +11,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
     const accessToken = user.generateAccessToken()
     const refreshToken = user.generateRefreshToken();
 
-    //we add refreshToken in database
+    //we add refreshToken in database like add prototype in object
     user.refreshToken = refreshToken
     await user.save({ validateBeforeSave: false });
 
