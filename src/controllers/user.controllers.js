@@ -3,7 +3,8 @@ import { ApiError } from "../utils/ApiError.js"
 import { User } from "../models/user.module.js"
 import { uploadOnCloudinary } from "../utils/cloudnary.js"
 import { ApiResponce } from "../utils/ApiResponce.js"
-import { application } from "express";
+import jwt  from "jsonwebtoken";
+import { response } from "express";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -207,6 +208,54 @@ const logoutUser = asynchandeler(async (req, res) => {
     .json(new ApiResponce(200, {}, "User logged Out"))
 })
 
+//hit this end point and refresh the access token and refresh token also callled session storage session storage is also similar like refresh token
+
+const refreshAccessToken =asynchandeler(async (req, res)=>{
+  const incomingRefreshToken= req.cookies.refreshToken || req.body.refreshToken
+
+  if(incomingRefreshToken){
+    throw new ApiError(401, "Unauthorized request")
+  }
+
+ try {
+  const decodedToken= jwt.verify(
+     incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET
+     )
+    
+   const user=await User.findById(decodedToken?._id)
+  
+    if(!user){
+     throw new ApiError(401, "invalid refresh token")
+    }
+  
+    if(incomingRefreshToken!== user?.refreshToken){
+     throw new ApiError(401, "refresh token is expire and not valid")
+    }
+ 
+    const options={
+     httpOnly: true,
+     secure: true
+    }
+ 
+  const {accessToken, newRefreshToken}=await generateAccessAndRefreshTokens(user._id)
+  return response.statusCode(200)
+  .cookies("accessToken", accessToken, options)
+  .cookies("refreshToken", newRefreshToken, options)
+ .json(
+   new ApiResponce(200,
+     {accessToken,
+     refreshToken:newRefreshToken,},
+     "Access token refreshed Successfully"
+     )
+ )
+ } catch (error) {
+ throw new ApiError(401, error?.message || "Invalid refresh token" )
+ }
+ 
+   
+
+})
+
 
 
 // const registerUser= asynchandeler(async(req, res)=>{
@@ -215,4 +264,4 @@ const logoutUser = asynchandeler(async (req, res) => {
 //     })
 // })
 
-export { registerUser, loginUser, logoutUser }
+export { registerUser, loginUser, logoutUser, refreshAccessToken }
