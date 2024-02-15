@@ -290,7 +290,7 @@ const getCurrentUser = asynchandeler(async (req, res) => {
 
   return res
     .status(200)
-    .json(200, req.user, "Current user fetched Successfully")
+    .json(new ApiResponce(200, req.user, "Current user fetched Successfully"))
 
 
 })
@@ -300,7 +300,7 @@ const updateAccountDetails = asynchandeler(async (req, res) => {
     throw new ApiError(400, "All fields are required")
   }
 
-  const user = User.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
@@ -324,6 +324,7 @@ const updateUserAvatar = asynchandeler(async (req, res) => {
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar fileis missing")
   }
+  //TODO: old avatar image
   const avatar = await uploadOnCloudinary(avatarLocalPath)
 
   if (!avatar.url) {
