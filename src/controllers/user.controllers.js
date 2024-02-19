@@ -393,16 +393,17 @@ const getUserChannelProfile = asynchandeler(async (req, res) => {
     throw new ApiError(40, "username is Missing")
   }
 
+  //Aggregate data directly go to mongodb not pass throw mongosse to mongodb
   const channel = await User.aggregate([
     {
-      //match user by username
+      //match user by username  we write field in aggregate we used $ sing
       $match: {
         username: username?.toLowerCase()
       }
     }
     ,
     {
-      //cheak Suscribers of you channel
+      //cheak Suscribers of you channel lookup is used for joint collection 
       $lookup: {
         from: "subscriptions", //db name of Subscription
         localField: "_id",
@@ -411,7 +412,7 @@ const getUserChannelProfile = asynchandeler(async (req, res) => {
       }
     },
     {
-      //cheak how much channel you subscribed to
+      //cheak how much channel you subscribed to 
       $lookup: {
         from: "subscriptions",
         localField: "_id",
@@ -421,7 +422,8 @@ const getUserChannelProfile = asynchandeler(async (req, res) => {
     }
     ,
     {
-      //$addFields add new fields in user object database existing fields are already avilable
+      //$addFields add new fields in user object database existing fields are already avilable Ex User have username , email etc ... by used $addFields we add new fields like subscriberscount and channelsSubscribedToCount  in User object... this mthod also converd array data into object form
+
       $addFields: {
         subscribersCount: {
           $size: "$subscribers" //size used for count all document of subscribers
@@ -431,6 +433,7 @@ const getUserChannelProfile = asynchandeler(async (req, res) => {
         },
 
         //subscriber button press or not 
+
         isSubscribed: {
           $cond: {
             if: {
@@ -442,8 +445,9 @@ const getUserChannelProfile = asynchandeler(async (req, res) => {
         }
 
       }
-    }, {
-      //$project in this we only provide selected data to frontend
+    },
+    {
+      //We used $project for which data we want to provide to frontand ... ex give below in this example we not pass password , accesstoken , refreshtoken, etc...
       $project: {
         fullName: 1,
         username: 1,
@@ -460,6 +464,7 @@ const getUserChannelProfile = asynchandeler(async (req, res) => {
     throw new ApiError(404, "channel does not exist");
   }
 
+  //we give in data in form in object
   return res.
     ststus(200)
     .json(
@@ -475,16 +480,21 @@ const getWatchHistory = asynchandeler(async (req, res) => {
   const user = await User.aggregate([
     {
       $match: {
+        //this is method to pass id throw aggregation pipeline by using mongoose method (new mongoose.Type.ObjectId(req.user._id))
+
         _id: new mongoose.Type.ObjectId(req.user._id)
+
       }
     },
+
     {
       $lookup: {
         from: "videos",
         localField: "WatchHistory",
         foreignField: "_id",
         as: "watchHistory",
-        //this pipeline used for nesting or sub pipeline and nesting of videos collection
+        //this pipeline used for nesting or sub pipeline and nesting of videos collection below
+
 
         pipeline: [
           {
@@ -504,11 +514,11 @@ const getWatchHistory = asynchandeler(async (req, res) => {
                 }
               ]
             }
-          },{
-  //we apply this firld to converd array form data into object
-            $addFields:{
-              owner:{
-                $first:"$owner"
+          }, {
+            //we apply this firld to converd array form data into object
+            $addFields: {
+              owner: {
+                $first: "$owner"
               }
             }
           }
@@ -518,14 +528,14 @@ const getWatchHistory = asynchandeler(async (req, res) => {
   ])
 
   return res.
-  status(200)
-  .json(
-    new ApiResponce(
-      200,
-      user[0].watchHistory,
-      "Watch history fetch Successfully"
+    status(200)
+    .json(
+      new ApiResponce(
+        200,
+        user[0].watchHistory,
+        "Watch history fetch Successfully"
+      )
     )
-  )
 
 })
 
