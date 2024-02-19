@@ -9,13 +9,15 @@ import { response } from "express";
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
-    const accessToken = user.generateAccessToken()
+    const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
 
-    //we add refreshToken in database like add prototype in object
-    user.refreshToken = refreshToken
-    await user.save({ validateBeforeSave: false });
+    // Set refreshToken value in the user object
+    user.refreshToken = refreshToken;
 
+    // Save the user object to the database
+    await user.save({ validateBeforeSave: false });
+    
     return { accessToken, refreshToken }
 
   } catch (error) {
@@ -170,7 +172,7 @@ const loginUser = asynchandeler(async (req, res) => {
   return res
     .status(200)
     .cookie("acccessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken)
+    .cookie("refreshToken", refreshToken, options)
     .json(
       new ApiResponce(200,
         {
@@ -186,10 +188,8 @@ const logoutUser = asynchandeler(async (req, res) => {
   User.findByIdAndUpdate(
     // req.user.id is quary for find user
     req.user._id, {
-    // $set is mongosedb operater what you want to update
-    $set: {
-
-      refreshToken: undefined,
+    $unset: {
+      refreshToken: 1 //this remove the field from documents
     }
   },
     {
@@ -405,7 +405,7 @@ const getUserChannelProfile = asynchandeler(async (req, res) => {
     {
       //cheak Suscribers of you channel lookup is used for joint collection 
       $lookup: {
-        from: "subscriptions", //db name of Subscription
+        from: "subscriptions", //db name of Subscription ye kis ke sath joint karna hai
         localField: "_id",
         foreignField: "channel",
         as: "subscripers"
@@ -426,10 +426,10 @@ const getUserChannelProfile = asynchandeler(async (req, res) => {
 
       $addFields: {
         subscribersCount: {
-          $size: "$subscribers" //size used for count all document of subscribers
+          $size: "$subscribers" //Calculate the size of the arrayField
         },
         channelsSubscribedToCount: {
-          $size: "$subscribedTo"  //size used for count all document of channel
+          $size: "$subscribedTo"  //Calculate the size of the arrayField
         },
 
         //subscriber button press or not 
@@ -519,6 +519,7 @@ const getWatchHistory = asynchandeler(async (req, res) => {
             $addFields: {
               owner: {
                 $first: "$owner"
+                // The $first operator is used to select the first element of an array
               }
             }
           }
