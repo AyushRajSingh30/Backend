@@ -384,6 +384,151 @@ const updateUserCoverImage = asynchandeler(async (req, res) => {
 
 })
 
+//agression pipeline
+const getUserChannelProfile = asynchandeler(async (req, res) => {
+  //find username fro url we used req.params
+  const { username } = req.params
+
+  if (!username?.trim()) {
+    throw new ApiError(40, "username is Missing")
+  }
+
+  const channel = await User.aggregate([
+    {
+      //match user by username
+      $match: {
+        username: username?.toLowerCase()
+      }
+    }
+    ,
+    {
+      //cheak Suscribers of you channel
+      $lookup: {
+        from: "subscriptions", //db name of Subscription
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscripers"
+      }
+    },
+    {
+      //cheak how much channel you subscribed to
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "subscribedTo"
+      }
+    }
+    ,
+    {
+      //$addFields add new fields in user object database existing fields are already avilable
+      $addFields: {
+        subscribersCount: {
+          $size: "$subscribers" //size used for count all document of subscribers
+        },
+        channelsSubscribedToCount: {
+          $size: "$subscribedTo"  //size used for count all document of channel
+        },
+
+        //subscriber button press or not 
+        isSubscribed: {
+          $cond: {
+            if: {
+              $in: [req.user?._id, "subscribers.subscriber"]
+              , then: true,
+              else: false
+            }
+          }
+        }
+
+      }
+    }, {
+      //$project in this we only provide selected data to frontend
+      $project: {
+        fullName: 1,
+        username: 1,
+        subscribersCount: 1,
+        channelsSubscribedToCount: 1,
+        avatar: 1,
+        coverImage: 1,
+        email: 1
+      }
+    }
+  ])
+
+  if (!channel?.length) {
+    throw new ApiError(404, "channel does not exist");
+  }
+
+  return res.
+    ststus(200)
+    .json(
+      new ApiResponce(200, channel[0], "User channel fetched Successfully")
+    )
+
+
+})
+
+
+const getWatchHistory = asynchandeler(async (req, res) => {
+
+  const user = await User.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Type.ObjectId(req.user._id)
+      }
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "WatchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        //this pipeline used for nesting or sub pipeline and nesting of videos collection
+
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              //this sub pipline for ownerfield
+              pipeline: [
+                {
+                  $project: {
+                    fullName: 1,
+                    avatar: 1,
+                    username: 1,
+                  }
+                }
+              ]
+            }
+          },{
+  //we apply this firld to converd array form data into object
+            $addFields:{
+              owner:{
+                $first:"$owner"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ])
+
+  return res.
+  status(200)
+  .json(
+    new ApiResponce(
+      200,
+      user[0].watchHistory,
+      "Watch history fetch Successfully"
+    )
+  )
+
+})
+
 
 
 // const registerUser= asynchandeler(async(req, res)=>{
@@ -401,5 +546,7 @@ export {
   changeCurrentPassword,
   updateAccountDetails,
   updateUserAvatar,
-  updateUserCoverImage
+  updateUserCoverImage,
+  getUserChannelProfile,
+  getWatchHistory,
 }
