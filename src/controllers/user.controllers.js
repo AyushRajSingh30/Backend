@@ -9,17 +9,35 @@ import { response } from "express";
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
-    const accessToken = user.generateAccessToken();
-    const refreshToken = user.generateRefreshToken();
+    const AccessToken1 = user.generateAccessToken();
+    const RefreshToken1 = user.generateRefreshToken();
 
-    // Set refreshToken value in the user object
-    user.refreshToken = refreshToken;
+    let accessToken;
+    let refreshToken;
 
-    // Save the user object to the database
+    //Accesstoken1 And RefreshToken1 value come in promise we converd value in string by using try catch method...
+    async function getValueFromAccessToken1Promise() {
+      try {
+        accessToken = await AccessToken1;   // resolved value of the promise
+      } catch (error) {
+        throw new ApiError(500, "Somthing Wrong while generated access token")
+      }
+    }
+    getValueFromAccessToken1Promise();
+
+     async function getValueFromRefreshToken1Promise(){
+      try {
+        refreshToken=await RefreshToken1;
+        user.refreshToken=refreshToken;        // Set refreshToken value in the user object
+      } catch (error) {
+        throw new ApiError(500, "Somthing Wrong while generated refresh token")
+      }
+     }
+     getValueFromRefreshToken1Promise()
+     // Save the user object to the database
     await user.save({ validateBeforeSave: false });
-    
-    return { accessToken, refreshToken }
 
+    return { accessToken, refreshToken }
   } catch (error) {
     throw new ApiError(500, "Somthing Wrong while generated refress and access token")
   }
@@ -171,7 +189,7 @@ const loginUser = asynchandeler(async (req, res) => {
   //Add cookies and responce
   return res
     .status(200)
-    .cookie("acccessToken", accessToken, options)
+    .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
     .json(
       new ApiResponce(200,
@@ -203,8 +221,8 @@ const logoutUser = asynchandeler(async (req, res) => {
 
   return res
     .status(200)
-    .clearCookies("accessToken", options)
-    .clearCookies("refreshToken", options)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
     .json(new ApiResponce(200, {}, "User logged Out"))
 })
 

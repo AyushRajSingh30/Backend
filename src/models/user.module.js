@@ -26,7 +26,7 @@ const userSchema = new Schema({
     },
     avatar: {
         type: String,       //cloudinary url
-        // required: true   // comment for temporery due to tecnical glich in cloudnary
+        required: true   
     },
 
     coverImage: {
