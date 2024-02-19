@@ -5,10 +5,11 @@ import { User } from "../models/user.module.js"
 export const verifyJWT = asynchandeler(async (req, res, next) => {
     try {
         //req.header is a method to access accessToken like Authorization: Bearer <token>
-        const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer", "")
+        const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "")
+        console.log(token);
 
         if (!token) {
-            throw new ApiError(401, "Unauthorized request")
+            throw new ApiError(401, "Unauthorized request AccessToken")
         }
         
         //provide key(ACCESS_TOKEN_SECRET) to jws for access data of jwt like id, email etc.
