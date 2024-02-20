@@ -25,16 +25,16 @@ const generateAccessAndRefreshTokens = async (userId) => {
     }
     getValueFromAccessToken1Promise();
 
-     async function getValueFromRefreshToken1Promise(){
+    async function getValueFromRefreshToken1Promise() {
       try {
-        refreshToken=await RefreshToken1;
-        user.refreshToken=refreshToken;        // Set refreshToken value in the user object
+        refreshToken = await RefreshToken1;
+        user.refreshToken = refreshToken;        // Set refreshToken value in the user object
       } catch (error) {
         throw new ApiError(500, "Somthing Wrong while generated refresh token")
       }
-     }
-     getValueFromRefreshToken1Promise()
-     // Save the user object to the database
+    }
+    getValueFromRefreshToken1Promise()
+    // Save the user object to the database
     await user.save({ validateBeforeSave: false });
 
     return { accessToken, refreshToken }
@@ -256,9 +256,10 @@ const refreshAccessToken = asynchandeler(async (req, res) => {
     }
 
     const { accessToken, newRefreshToken } = await generateAccessAndRefreshTokens(user._id)
-    return response.statusCode(200)
-      .cookies("accessToken", accessToken, options)
-      .cookies("refreshToken", newRefreshToken, options)
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", newRefreshToken, options)
       .json(
         new ApiResponce(200,
           {
